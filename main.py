@@ -58,6 +58,8 @@ class Window(app.Canvas):
 			self._renderer.draw_points = not self._renderer.draw_points 
 		if e.key.name == 'm':
 			self._renderer.draw_minimap = not self._renderer.draw_minimap
+		if e.key.name == 'f':
+			self._world.vehicle.do_filter = not self._world.vehicle.do_filter
 		if e.key.name == 'e':
 			print('export..', end='')
 			try:
@@ -80,10 +82,7 @@ class Window(app.Canvas):
 			self._world.vehicle.position[0] += cos(self._world.vehicle.rotation) * 0.02
 			self._world.vehicle.position[1] += sin(self._world.vehicle.rotation) * 0.02
 			
-		self._ticks += 1
-		if self._ticks > 4:
-			self._ticks = 0
-			self._world.vehicle.update()
+		self._world.vehicle.update()	
 	
 if __name__ == '__main__':
 	Window().show()

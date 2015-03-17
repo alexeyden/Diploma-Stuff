@@ -229,9 +229,16 @@ class Renderer:
 			self._program_points['pos'] = gloo.VertexBuffer(np.array(data, np.float32))
 			self._program_points.draw('points')
 		
-		
+		'''
 		gloo.gl.glLineWidth(4.0)
 		self._program_points['color'] = np.array([1.0, 0.2, 1.0])
 		for trend in self.world.vehicle.buffer_trends:
 			self._program_points['pos'] = gloo.VertexBuffer(np.array(trend, np.float32))
 			self._program_points.draw('lines')
+		self._program_points['color'] = np.array([0.0, 1.0, 1.0])
+		
+		for trend in self.world.vehicle.buffer_trends_prev:
+			if trend != None:
+				self._program_points['pos'] = gloo.VertexBuffer(np.array(trend, np.float32))
+				self._program_points.draw('lines')
+		'''

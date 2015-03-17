@@ -9,9 +9,11 @@ class RangeSensor:
 		self.position = pos
 		self.direction = di
 		self.parent = parent
+		self.prev = []
 	
 	def measure(self):
-		return self._trace()
+		m = self._trace()
+		return m
 	
 	def _trace(self):
 		a = self.parent.rotation
@@ -103,84 +105,72 @@ class Vehicle:
 		
 		self.geom_chains = []
 		self.buffer_chains = [[], [], [], []]
-		self.buffer_trends = [[], [], [], []]
-		self.chain_trends = []
+		self.buffer_chains_max = [0.0, 0.0, 0.0, 0.0]
+		self.do_filter = True
 		
 		self.prev_r = None
 		self.sensors = []
 		self.sensors.append(RangeSensor(self,  [-0.3, 0.0], -pi/2))
-		#self.sensors.append(RangeSensor(self, [ 0.0, 0.4], 0))
-		#self.sensors.append(RangeSensor(self, [ 0.3, 0.0], pi/2))
-		#self.sensors.append(RangeSensor(self,  [ 0.0,-0.4], pi))
+		self.sensors.append(RangeSensor(self, [ 0.0, 0.4], 0))
+		self.sensors.append(RangeSensor(self, [ 0.3, 0.0], pi/2))
+		self.sensors.append(RangeSensor(self,  [ 0.0,-0.4], pi))
 		
 		self.chain_split_thr = 0.5
 		
-		Q,R,F,B,H = 0.1 * np.eye(2), np.eye(2), np.eye(2), np.eye(2), np.eye(2)
+		Q,R,F,B,H = 0.05 * np.eye(2), 1.0 * np.eye(2), np.eye(2), np.eye(2), np.eye(2)
 		self._kalman = [
 			kalman.KalmanFilter(Q, R, F, B, H) for i in range(0, 4)
 		]
+		
+		#for k in self._kalman:
+		#	k.p = 0.2 * np.eye(2)
 	
+	'''
 	def _chain_trend(self, index):
-		'''
-		метод главных компонент
-		'''
 		chain = self.buffer_chains[index]
 		
-		sum_x, sum_y, sum_xx, sum_yy, sum_xy = 0, 0, 0, 0, 0
-		for x,y in chain:
-			sum_x += x; sum_y += y
-			sum_xx += x**2; sum_yy += y**2
-			sum_xy += x * y
-		n = len(chain)
-		Mx, My = sum_x/n, sum_y/n
-		Dx, Dy = sum_xx/n - Mx*Mx, sum_yy/n - My*My
-		Cxy = sum_xy/n - Mx * My
+		Mx, My, ap, bp, am, bm = algo.pca2d(chain)
 		
-		sum_D = Dx + Dy
-		dif_D = Dx - Dy
-		discr_square = sqrt(dif_D * dif_D + 4 * Cxy * Cxy)
-		lmbd_plus = (sum_D + discr_square)/2
-		lmbd_minus = (sum_D - discr_square)/2
-		ap = Dx + Cxy - lmbd_minus
-		bp = Dy + Cxy - lmbd_minus
 		a_len = sqrt(ap*ap + bp*bp)
 		max_dist = sqrt((chain[0][0]-chain[-1][0])**2 + (chain[0][1] - chain[-1][1])**2)/2
 		
 		ap = max_dist * ap / a_len
 		bp = max_dist * bp / a_len
 		
-		#нормаль
-		#am = Dx + Cxy - lmbd_plus
-		#bm = Dy + Cxy - lmbd_plus
-		
 		start = [-ap + Mx, -bp + My]
 		end = [ap + Mx, bp + My]
 		
 		self.buffer_trends[index] = (start, end)
-		
+		return (ap, bp)
+	'''
+	
 	def _add_filtered(self, value, chain, kalman):
-		dir_vec = [self.position[0] - value[0], self.position[1] - value[1]]
-		L = 0.1 * np.sqrt(np.dot(dir_vec, dir_vec))
-		DL = L**2/12
-		DLx = cos(self.rotation)**2 * DL
-		DLy = sin(self.rotation)**2 * DL
-		covXY = cos(self.rotation) * sin(self.rotation) * DL
-		
-		R = np.array([
-			[DLx,   covXY],
-			[covXY,   DLy]
-		])
-		
-		chain.append(kalman.correct(value))
-		#chain.append(value)
+		if self.do_filter:
+			chain.append(kalman.correct(value))
+		else:
+			chain.append(value)
 	
 	def export_points(self, path):
 		f = open(path, 'w')
 		for chain in self.geom_chains:
 			for point in chain:
-				f.write('{0:.3f} {0:.3f}\n'.format(point[0], point[1]))
+				f.write('{0:.3f} {1:.3f}\n'.format(point[0], point[1]))
 			f.write('\n')
 		f.close()
+	
+	def _should_split(self, point, sensor_id):
+		chain = self.buffer_chains[sensor_id]
+		m = point
+		
+		if len(chain) > 0 and np.sqrt(np.dot(m - chain[-1], m - chain[-1])) > self.chain_split_thr:
+			return True
+		'''
+		prev_trend = self.buffer_trends_prev[sensor_id]
+		if not prev_trend is None and not trend is None and prev_trend[0] * trend[0] + prev_trend[1] * trend[1] < 0.8:
+			return True
+		'''
+		
+		return False
 	
 	def update(self):
 		for i, sensor in enumerate(self.sensors):
@@ -189,17 +179,37 @@ class Vehicle:
 			if len(self.buffer_chains[i]) == 0:
 				self._kalman[i].reset(m, np.array([0,0]), 0.2 * np.eye(2))
 				self.buffer_chains[i].append(m)
-			elif len(self.buffer_chains[i]) > 0 and np.sqrt(np.dot(m - self.buffer_chains[i][-1],m - self.buffer_chains[i][-1])) > self.chain_split_thr:
+				continue
+			'''
+			x, y = None, None
+			if len(self.buffer_chains[i]) > 5:
+				x,y = self._chain_trend(i)
+				if len(self.buffer_chains[i]) == 20:
+					self.buffer_trends_prev[i] = (x, y)
+			'''
+			
+			dist = sqrt((m[0] - self.buffer_chains[i][0][0])**2 + (m[1] - self.buffer_chains[i][0][1])**2)
+			
+			if dist > self.buffer_chains_max[i]:
+				self.buffer_chains_max[i] = dist
+
+			if self._should_split(m, i):
 				if len(self.buffer_chains[i]) > 5:
-					#self._chain_trend(self.buffer_chains[i])
-					self.geom_chains.append(self.buffer_chains[i])
+					self.geom_chains.append(self.buffer_chains[i][:-1])
 				self.buffer_chains[i] = []
-				self._kalman[i].reset(m, np.array([0,0]))
+				#self.buffer_trends_prev[i] = None
+				#self.buffer_trends[i] = []
+				self._kalman[i].reset(m, np.array([0,0]))#, 0.2 * np.eye(2))
+				continue
 				#print('splitting chain')
-			else:
+			
+			if dist > 0.5:
+				self.geom_chains.append(self.buffer_chains[i])
+				self.buffer_chains[i] = []
+				self.buffer_chains_max[i] = 0.0
+			
+			if len(self.buffer_chains[i]) < 1 or sqrt((self.buffer_chains[i][-1][0] - m[0])**2 + (self.buffer_chains[i][-1][1] - m[1])**2) > 0.05:
 				self._add_filtered(m, self.buffer_chains[i], self._kalman[i])
-				if len(self.buffer_chains[i]) > 5:
-					self._chain_trend(i)
 	
 	@property
 	def world(self):
