@@ -12,10 +12,21 @@ class RangeSensor:
 		self.prev = []
 	
 	def measure(self):
-		m = self._trace()
-		return m
+		pos_list = []
+		
+		for dr in range(-15, 15, 3):
+			m = self._trace(dr)
+			pos_list.append(m)
+		
+		mes = [
+			sum([p[0] for p in pos_list])/len(pos_list),
+			sum([p[1] for p in pos_list])/len(pos_list)
+		]
+		return np.array(mes, np.float32)
 	
-	def _trace(self):
+	def _trace(self, drot):
+		drot_rad = pi * drot/180
+		
 		a = self.parent.rotation
 		rot = np.array([
 			[cos(a), -sin(a),  0.0],
@@ -26,7 +37,8 @@ class RangeSensor:
 		p = np.array([self.position[0], self.position[1], 1])
 		wp = np.dot(rot, p)
 		
-		a = self.parent.rotation + self.direction
+		a = self.parent.rotation + self.direction + drot_rad
+		
 		rot = np.array([
 			[cos(a), -sin(a),  0.0],
 			[sin(a),  cos(a),  0.0],
@@ -106,7 +118,7 @@ class Vehicle:
 		self.geom_chains = []
 		self.buffer_chains = [[], [], [], []]
 		self.buffer_chains_max = [0.0, 0.0, 0.0, 0.0]
-		self.do_filter = True
+		self.do_filter = False
 		
 		self.prev_r = None
 		self.sensors = []

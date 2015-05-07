@@ -81,7 +81,7 @@ class Window(app.Canvas):
 		if self._move_back:
 			self._world.vehicle.position[0] += cos(self._world.vehicle.rotation) * 0.02
 			self._world.vehicle.position[1] += sin(self._world.vehicle.rotation) * 0.02
-			
+
 		self._world.vehicle.update()	
 	
 if __name__ == '__main__':

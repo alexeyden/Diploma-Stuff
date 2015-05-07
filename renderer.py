@@ -179,9 +179,21 @@ class Renderer:
 		gloo.gl.glLineWidth(1.0)
 		for sensor in self.world.vehicle.sensors:
 			p = sensor.measure()
+			
+			R = 15
+			plen = 8
+			ldir = [ cos(sensor.direction - R * pi/180) * plen, sin(sensor.direction - R * pi/180) * plen ]
+			rdir = [ cos(sensor.direction + R * pi/180) * plen, sin(sensor.direction + R * pi/180) * plen ]
+			
 			self._program_points['pos'] = gloo.VertexBuffer(np.array([[0.0, 0.0], [p[0] + vp[1], p[1] + vp[0]]], np.float32))
 			self._program_points.draw('lines')
 			
+			#self._program_points['pos'] = gloo.VertexBuffer(np.array([[0.0, 0.0], [p[0] + ldir[1], p[1] + ldir[0]]], np.float32))
+			#self._program_points.draw('lines')
+			
+			#self._program_points['pos'] = gloo.VertexBuffer(np.array([[0.0, 0.0], [p[0] + rdir[1], p[1] + rdir[0]]], np.float32))
+			#self._program_points.draw('lines')
+	
 		self._program_points['view'] = np.mat(np.dot(trans, scale))
 		
 		'''
