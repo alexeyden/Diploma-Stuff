@@ -51,7 +51,7 @@ class RangeSensor:
 		
 		p0 = self._world_to_image(self.parent.position)
 		p1 = self._world_to_image(vec)
-		y1,x1 = p0
+		x1,y1 = p0
 		x2,y2 = p1
 		x = int(x1)
 		y = int(y1)
