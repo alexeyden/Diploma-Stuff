@@ -1,30 +1,43 @@
 kernel void trace
 (
 	global const unsigned char* image,
-	unsigned width,
-	unsigned height,
-	global const int4* points,
-	global int2* results
+	int width,
+	int height,
+	int pos_x,
+	int pos_y,
+	global const float2* dirs,
+	global float* results
 ) {
 	int id = get_global_id(0);
-	int x1 = points[id].x, y1 = points[id].y;
-	int x2 = points[id].z, y2 = points[id].w;
+	int x = pos_x, y = pos_y;
 	
-	const int dx = abs(x2 - x1), dy = abs(y2 - y1);
-	const int sx = x1 < x2  ? 1 : -1, sy = y1 < y2 ? 1 : -1;
-	int err = dx - dy;
+	float dirX = dirs[id].x + 0.0001f; 
+	float dirY = dirs[id].y + 0.0001f;
 	
-	while((x1 != x2 || y1 != y2) && (image[y1 * width + x1] != 0x00)) {
-		if(err * 2 > -dy) {
-			err -= dy;
-			x1 += sx;
+	float	ddx = sqrt(1.0f + (dirY * dirY) / (dirX * dirX));
+	float	ddy = sqrt(1.0f + (dirX * dirX) / (dirY * dirY));
+	
+	int stepX  = 1, stepY = 1;
+	float sdx = ddx, sdy = ddy;
+	
+	if(dirX < 0) {
+		stepX = -1; sdx = 0;
+	}
+	if(dirY < 0) {
+		stepY = -1; sdy = 0;
+	}
+	
+	while(x > 0 && y > 0 && x < width-1 && y < height-1 && image[y * width + x] != 0x00) {
+		if(sdx < sdy) {
+			sdx += ddx;
+			x += stepX;
 		}
-		if(err * 2 < dx) {
-			err += dx;
-			y1 += sy;
+		else {
+			sdy += ddy;
+			y += stepY;
 		}
 	}
 	
-	results[id].x = x1;
-	results[id].y = y1;
+	float x_loc = x - pos_x, y_loc = y - pos_y;
+	results[id] = sqrt(x_loc*x_loc + y_loc*y_loc);
 }

@@ -14,6 +14,10 @@ import time
 
 from responsegrid import ResponseGridNative
 
+from giscon import GisConnector
+
+#gis_con = GisConnector('10.42.0.1')
+
 class Sensor:
 	def __init__(self, vehicle, position, rotation):
 		self.vehicle = vehicle
@@ -125,7 +129,7 @@ class ResponseGrid:
 class World:
 	def __init__(self):
 		self.vehicle = None
-		self.grid = ResponseGridNative(64, 64, 0.125)
+		self.grid = ResponseGridNative(256, 256, 0.5)
 		self.contours = []
 		self.holes = []
 
@@ -149,7 +153,7 @@ class World:
 		for c in self.holes:
 			for p in c:
 				p[0][0] /= self.grid.scale(); p[0][1] /= self.grid.scale()
-				
+	
 class Geometry:
 	def empty(self, x, y):
 		raise NotImplementedError

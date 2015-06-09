@@ -114,7 +114,7 @@ protected:
 	void updateCell(int x, int y, double s, double r, double theta, double alpha) {
 		int theta_index = int(to_deg(theta)/(360.0/_angles));
 		
-		double k = 5.0/alpha;
+		double k = 20.0/alpha;
 		double eps = 1.0/_scale;
 		
 		double Ps = (fabs(s - r) > eps) ? 0.05 : min(1.0, k/(r * _scale));

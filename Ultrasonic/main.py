@@ -69,8 +69,12 @@ class MainWindow(QWidget):
 		self.timer.start(20)
 		
 		self.rangeUpdateTimer = QTimer()
-		self.timer.timeout.connect(self.mapUpdateTick)
-		self.timer.start(100)
+		self.rangeUpdateTimer.timeout.connect(self.mapUpdateTick)
+		self.rangeUpdateTimer.start(100)
+		
+		self.gisUpdateTimer = QTimer()
+		self.gisUpdateTimer.timeout.connect(self.gisUpdateTick)
+		self.gisUpdateTimer.start(5000)
 	
 	def paintEvent(self, event):
 		painter = QPainter()
@@ -112,6 +116,9 @@ class MainWindow(QWidget):
 		
 	def mapUpdateTick(self):
 		self.controller.onMeasure()
+		
+	def gisUpdateTick(self):
+		self.controller.onUpdateGisData()
 	
 	def sizeHint(self):
 		return QSize(800, 600)

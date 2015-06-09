@@ -19,6 +19,9 @@ class WorldController:
 	def update(self, dt):
 		raise NotImplementedError
 	
+	def onUpdateGisData(self):
+		raise NotImplementedError
+	
 class SimulatorWorldController(WorldController):
 	def __init__(self, world, renderer):
 		WorldController.__init__(self, world, renderer)
@@ -50,3 +53,5 @@ class SimulatorWorldController(WorldController):
 		self.world.vehicle.position[0] += self._curMoveVel * cos(self.world.vehicle.rotation - pi/2) * dt
 		self.world.vehicle.position[1] += self._curMoveVel * sin(self.world.vehicle.rotation - pi/2) * dt
 		
+	def onUpdateGisData(self):
+		pass

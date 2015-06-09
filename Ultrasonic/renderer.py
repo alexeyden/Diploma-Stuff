@@ -89,5 +89,10 @@ class QPainterRenderer(Renderer):
 			painter.fillRect(QRectF(sensor.position[0] - sensor_size/2, sensor.position[1] - sensor_size/2, sensor_size, sensor_size), QColor(200, 40, 40))
 			
 		painter.resetTransform()
-		painter.drawText(QPointF(10, 10), 'Objects: {0}'.format(len(self.world.contours)))
+		painter.drawText(QPointF(10, 20), 'Objects: {0}'.format(len(self.world.contours)))
+		painter.drawText(QPointF(10, 50), 'Holes: {0}'.format(len(self.world.holes)))
+		painter.drawText(QPointF(10, 70), 'Position: {0} {1}'.format(
+			self.world.vehicle.position[0],
+			self.world.vehicle.position[1]
+		))
 		
