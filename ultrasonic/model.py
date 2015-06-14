@@ -13,10 +13,7 @@ from util import *
 import time
 
 from responsegrid import ResponseGridNative
-
-from giscon import GisConnector
-
-#gis_con = GisConnector('10.42.0.1')
+from tracer import OpenCLTracer 
 
 class Sensor:
 	def __init__(self, vehicle, position, rotation):
@@ -24,14 +21,12 @@ class Sensor:
 		self.position = position
 		self.rotation = rotation
 		self.angle = to_rad(30) 
-	
+		
 	def measure(self):
 		veh_pos = self.vehicle.position
-		direction = vec_from_angle(self.vehicle.rotation + self.rotation)
-		
-		amp = self.vehicle.world.distance(veh_pos, vec_fac(direction, 10))
-		#print(amp)
-		return vec_fac(vec_from_angle(self.rotation), amp)
+		dirs = [vec_from_angle(self.rotation + self.vehicle.rotation + to_rad(i * 5)) for i in range(-3, 4)]
+		dists = self.vehicle.world.distances(veh_pos, dirs)
+		return min(dists)
 
 class Vehicle:
 	def __init__(self, world, position, rotation):
@@ -42,7 +37,7 @@ class Vehicle:
 		self.sensors = []
 		
 		self.world = world
-
+		
 class ResponseGrid:
 	def __init__(self, width, height, scale):
 		self._width = width
@@ -60,17 +55,15 @@ class ResponseGrid:
 			self.prMap.append(np.full((width, height), int((1 - 0.5**(1.0/n)) * 0xff), dtype=np.uint8))
 	
 	def update(self, sensor):
-		point = sensor.measure()
-		
-		theta = sensor.vehicle.rotation + sensor.rotation
+		theta = sensor.rotation + sensor.vehicle.rotation
 		alpha = sensor.angle
 		
-		R = vec_len(point)
+		R = sensor.measure() + 0.0001
 		OA = [ R * cos(theta + alpha/2), R * sin(theta + alpha/2) ]
 		OB = [ R * cos(theta - alpha/2), R * sin(theta - alpha/2) ]
 		OC = [ R * cos(theta), R * sin(theta) ]
 		
-		spos = sensor.vehicle.position
+		spos = sensor.vehicle.position 
 		
 		OAg = self._world2grid([OA[0] + spos[0], OA[1] + spos[1]])
 		OBg = self._world2grid([OB[0] + spos[0], OB[1] + spos[1]])
@@ -129,115 +122,44 @@ class ResponseGrid:
 class World:
 	def __init__(self):
 		self.vehicle = None
-		self.grid = ResponseGridNative(128, 128, 0.25)
+		self.grid = ResponseGrid(128, 128, 0.25)
 		self.contours = []
-		self.holes = []
 
-	def distance(self, point, direction):
+	def distances(self, point, directions):
 		raise NotImplementedError
 	
 	def update(self):
 		pmap = np.copy(self.grid.poData())
-		ret, pmap = cv2.threshold(pmap, prob2byte(0.8), 0xff, cv2.THRESH_BINARY)
+		ret, pmap = cv2.threshold(pmap, prob2byte(0.55), 0xff, cv2.THRESH_BINARY)
+		self.contours,hier = cv2.findContours(pmap, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)
+		cv2.drawContours(pmap, self.contours, -1, 0xff, 2)
 		self.contours,hier = cv2.findContours(pmap, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE, offset=(-self.grid.width()/2, -self.grid.height()/2))
 		
 		for c in self.contours:
 			for p in c:
 				p[0][0] /= self.grid.scale(); p[0][1] /= self.grid.scale()
 				
-		pmap = np.copy(self.grid.poData())
-		pmap = cv2.bitwise_not(pmap)
-		ret, pmap = cv2.threshold(pmap, prob2byte(0.7), 0xff, cv2.THRESH_BINARY)
-		self.holes, hier = cv2.findContours(pmap, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE, offset=(-self.grid.width()/2, -self.grid.height()/2))
-		
-		for c in self.holes:
-			for p in c:
-				p[0][0] /= self.grid.scale(); p[0][1] /= self.grid.scale()
-	
-class Geometry:
-	def empty(self, x, y):
-		raise NotImplementedError
-	def set(self, x, y, value):
-		raise NotImplementedError
-	def width(self):
-		raise NotImplementedError
-	def height(self):
-		raise NotImplementedError
-	
-class QImageGeometry(Geometry):
-	def __init__(self, image):
-		self.image = image
-	def empty(self, x, y):
-		return self.image.pixel(int(x), int(y)) != 0xff000000
-	def update(self, x, y, occupied):
-		self.image.setPixel(int(x), int(y), 0x000000 if occupied else 0xffffff)
-	def width(self):
-		return self.image.width()
-	def height(self):
-		return self.image.height()
-	
 class SimulatorWorld(World):
 	def __init__(self, geometry):
 		World.__init__(self)
 		
 		self.geometry = geometry
 		self.geometryScale = 2
+		self.tracer = OpenCLTracer(self.geometry)
 	
-	def distance(self, point, direction):
-		p0 = self._world2geom(point)
-		p1 = self._world2geom(vec_sum(point, direction))
-		
-		#p0b = self._geom2world(p0)
-		#print(round(p0b[0], 2), round(p0b[1], 2), ' / ', round(self.vehicle.position[0], 2), round(self.vehicle.position[1], 2))
-		
-		x1,y1 = p0
-		x2,y2 = p1
-		x = int(x1)
-		y = int(y1)
-		
-		points = []
-		
-		#trace
-		dirX = (x2-x1 + 0.0001)/sqrt((x2 - x1)*(x2 - x1) + (y2 - y1) * (y2 - y1))
-		dirY = (y2-y1 + 0.0001)/sqrt((x2 - x1)*(x2 - x1) + (y2 - y1) * (y2 - y1))
-		
-		ddx = sqrt(1 + (dirY * dirY) / (dirX * dirX))
-		ddy = sqrt(1 + (dirX * dirX) / (dirY * dirY))
-		
-		stepX = 1
-		stepY = 1
-		sdy = 1 * ddy
-		sdx = 1 * ddx
-		
-		if dirX < 0:
-			stepX = -1
-			sdx = 0
-			
-		if dirY < 0:
-			stepY = -1
-			sdy = 0
-		#self.geometry.update(x2-stepX, y2-stepY, 1)
-		#print('start: ', x, y)
-		while x > 0 and y > 0 and x < self.geometry.width()-1 and y < self.geometry.height()-1 and self.geometry.empty(x, y):
-			if sdx < sdy:
-				sdx += ddx
-				x += stepX
-			else:
-				sdy += ddy
-				y += stepY
-			
-		return vec_len([x - x1, y - y1])
+	def distances(self, point, directions):
+		return self.tracer.trace(self.world2geom(point), directions)
 	
-	def _geom2world(self, geom_pos):
+	def geom2world(self, geom_pos):
 		return [
-			geom_pos[0] - self.geometry.width()/2,
-			geom_pos[1] - self.geometry.height()/2
+			geom_pos[0] - self.geometry.shape[0]/2,
+			geom_pos[1] - self.geometry.shape[1]/2
 		]
 	
-	def _world2geom(self, world_pos):
+	def world2geom(self, world_pos):
 		return [
-			world_pos[0] + self.geometry.width()/2,
-			world_pos[1] + self.geometry.height()/2
+			world_pos[0] + self.geometry.shape[0]/2,
+			world_pos[1] + self.geometry.shape[1]/2
 		]
 	
 class WorldBuilder:
@@ -247,9 +169,6 @@ class WorldBuilder:
 	def buildVehicle(self, position, rotation):
 		raise NotImplementedError
 
-	def buildGeometry(self, geom):
-		raise NotImplementedError
-	
 	def finish(self):
 		raise NotImplementedError
 		
