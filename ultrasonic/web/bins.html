@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style type="text/css">
+    html  {
+        overflow: hidden;
+        background-color : black;
+    }  
+    #gyro_0 {
+        position: absolute; 
+        top: -243px; 
+        left: 0px; 
+    }
+    #gyro_1 {
+        position: absolute; 
+        top: 0px; 
+        left: 0px; 
+    }
+    #gyro_2 {
+        position: absolute; 
+        top: 0px; 
+        left: 0px; 
+    }
+    #tmp {
+        position: absolute; 
+        top: 50px; 
+        left: 700px; 
+    }
+    div input {
+        display: block;
+    }
+    .hide_gyro_bg {
+        position: absolute; 
+        top: 0px; 
+        left: 0px; 
+        width : 486px;
+        height : 486px;
+        overflow: hidden;
+    }
+</style>
+</head>
+<body>
+    <div class="hide_gyro_bg"><img id="gyro_0" src="gyro_0.png" alt="" /></div>
+    <img id="gyro_1" src="gyro_1.png" alt="" />
+    <img id="gyro_2" src="gyro_2.png" alt="" />
+</body>
+<script type = "text/javascript" >
+var gyroStatus = JSON.parse(
+'{"state": "init", ' +
+'"errors": 0, ' +
+'"packets": 0, ' +
+'"port": "Unknown"}'
+);
+
+
+function getState()
+{
+    xmlhttp = new XMLHttpRequest();
+    try
+    {
+        xmlhttp.open("GET", "/bins/status");
+        xmlhttp.onreadystatechange = function()
+        {
+            if (xmlhttp.readyState == 4)
+            {
+                if (xmlhttp.status == 200)
+                {
+                    gyroStatus = JSON.parse(xmlhttp.responseText);
+                }
+                else
+                {
+                    gyroStatus = JSON.parse(
+                    '{"state": "Read error:'+xmlhttp.status+'", ' +
+                    '"errors": 0, ' +
+                    '"packets": 0, ' +
+                    '"port": "Unknown"}'
+                    );
+                }
+            }
+        }
+        xmlhttp.send(null);
+    }
+    catch (e)
+    {
+        gyroStatus = JSON.parse(
+        '{"state": "HTTP error:'+e.message+'", ' +
+        '"errors": 0, ' +
+        '"packets": 0, ' +
+        '"port": "Unknown"}'
+        );
+    }
+    if (gyroStatus['state'] != 'normal op')
+    {
+        disableGyro();
+    }
+}
+
+//  ---------------------------------------
+
+function disableGyro()
+{
+    document.getElementById('gyro_0').setAttribute('style', 'visibility: hidden;');
+    document.getElementById('gyro_1').setAttribute('style', 'visibility: hidden;');
+}
+
+//  ---------------------------------------
+
+function setGyro(CRT)
+{
+    e_top = CRT['T'] * 95 / 40 - 243;
+    e_ot = 486 - CRT['T'] * 95 / 40;
+    document.getElementById('gyro_0').setAttribute(
+    'style',
+    '-moz-transform-origin: 243px ' + e_ot + 'px 0px;' +
+    '-moz-transform: rotate(' + CRT['R'] + 'deg);' +
+    '-webkit-transform-origin: 243px ' + e_ot + 'px 0px;' +
+    '-webkit-transform: rotate(' + CRT['R'] + 'deg);' +
+    'top: ' + e_top + 'px;' +
+    'visibility: visible;'
+    );
+    document.getElementById('gyro_1').setAttribute(
+    'style',
+    '-moz-transform: rotate(' + CRT['C'] + 'deg);' +
+    '-webkit-transform: rotate(' + CRT['C'] + 'deg);' +
+    'visibility: visible;'
+    );
+}
+
+//  ---------------------------------------
+
+function getCRT()
+{
+    if (gyroStatus['state'] == 'normal op')
+    {
+        xmlhttp = new XMLHttpRequest();
+        try
+        {
+            xmlhttp.open("GET", "/bins/D4C");
+            xmlhttp.onreadystatechange = function()
+            {
+                if (xmlhttp.readyState == 4)
+                {
+                    if (xmlhttp.status == 200)
+                    {
+                        setGyro(JSON.parse(xmlhttp.responseText))
+                    }
+                    else
+                    {
+                        disableGyro();
+                    }
+                }
+            }
+            xmlhttp.send(null);
+        }
+        catch (e)
+        {
+            disableGyro();
+        }
+    }
+}
+
+//  ---------------------------------------
+
+var tmGyro = window.setInterval("getCRT();", 500);
+var tmState = window.setInterval("getState();", 5000);
+getState();
+//alert(window.screen.availHeight + ' ' + window.screen.availWidth);
+</script>
+</html>
+

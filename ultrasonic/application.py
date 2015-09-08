@@ -1,4 +1,11 @@
+#!/usr/bin/env python2
+# coding:utf-8
+
 from robot.world import *
+
+from model.cppresponsegridblock import CppResponseGridBlock
+from model.responsegrid import *
+import threading
 
 class Ultrasonic:
 	def __init__(self):
@@ -30,7 +37,7 @@ class Ultrasonic:
 
 def main():
 	app = Ultrasonic()
-	t = Timer(5.0, app.update)
+	t = threading.Timer(5.0, app.update)
 	t.start()
 	
 if __name__ == "__main__":
