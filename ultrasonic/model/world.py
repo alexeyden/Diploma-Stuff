@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 # coding: utf-8
 
 import numpy as np
@@ -19,8 +20,12 @@ class World:
 		bpos = self.grid.blockPosAt(self.vehicle.position)
 		block = self.grid.blocks[bpos]
 		
-		#obstacles, hier = cv2.findContours(pmap, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)
-		#cv2.drawContours(pmap, obstacles, -1, 0xff, border)
+		pmap = np.require(block.poData() * 0xff, np.uint8, 'C')
+		ret, pmap = cv2.threshold(pmap, Pthr, 0xff, cv2.THRESH_BINARY)
+		kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(border,border))
+		pmap = cv2.dilate(pmap, kernel, iterations=1)
+		obstacles, hier = cv2.findContours(pmap, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)
+		cv2.drawContours(pmap, obstacles, -1, 0xff, border)
 		obstacles, hier = cv2.findContours(pmap, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)
 		
 		self.obstacles = [
