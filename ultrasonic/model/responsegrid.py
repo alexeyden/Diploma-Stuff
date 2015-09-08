@@ -5,6 +5,10 @@ import numpy as np
 from math import *
 from util import *
 
+from cppresponsegridblock import CppResponseGridBlock
+
+import time
+
 class ResponseGrid:
 	"""
 		Сетка отклика
@@ -66,16 +70,21 @@ def test():
 	import cv2
 	from responsegridblock import PyResponseGridBlock
 	
-	proto = PyResponseGridBlock(128, 1)
-	rg = ResponseGrid(10, proto)
-	rg.update((0,0), pi/3, 30, pi/6)
+	for i in range(16, 1024, 64):
+		t = time.clock()
+		proto = CppResponseGridBlock(i, 1)
+		rg = ResponseGrid(10, proto)
+		rg.update((0,0), pi/3, 30, pi/6)
+		print i,'\t', time.clock() - t
 	
+	'''
 	for k,v in rg.blocks.items():
 		img = np.require(v.poData(), np.uint8, 'C')
 		cv2.imshow("{0}_{1}".format(k[0], k[1]), img)
 		
 	while cv2.waitKey() != 1048586:
 		pass
+	'''
 	
 if __name__ == '__main__':
 	test()

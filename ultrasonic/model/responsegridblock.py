@@ -78,7 +78,7 @@ class PyResponseGridBlock(ResponseGridBlock):
 		
 		Po = 1.0 - reduce(lambda x,y: x * y, [1.0 - self._prMap[i][y, x] for i in range(0, self.n)])
 		
-		self._poMap[y, x] = 1.0
+		self._poMap[y, x] = Po
 		
 	def poData(self):
 		return self._poMap
