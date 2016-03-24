@@ -9,6 +9,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
 import time
+from math import *
 
 class Renderer:
 	"""
@@ -42,16 +43,34 @@ class QPainterRenderer(Renderer):
 		self.update()
 	
 	def update(self):
-		pos = self.world.grid.blockPosAt(self.world.vehicle.position)
-		block = self.world.grid.blockAt(self.world.vehicle.position)
+		pd = [(0, 0)]
 
-		if not block:
-			return
+		self._gridImages.clear()
+	
+		dx = self.world.vehicle.position[0] / self.world.grid.blockSize
+		dy = self.world.vehicle.position[1] / self.world.grid.blockSize
+		sx = 1 if dx > 0 and modf(dx)[0] > 0.5 or dx < 0 and modf(abs(dx))[0] < 0.5 else -1 
+		sy = 1 if dy > 0 and modf(dy)[0] > 0.5 or dy < 0 and modf(abs(dy))[0] < 0.5 else -1
 		
-		img = np.require(block.poData() * 0xff, np.uint8, 'C')
-		self._gridImages[pos] = QImage(img.data, img.shape[0], img.shape[1], QImage.Format_Indexed8)
-		for i in range(256):
-			self._gridImages[pos].setColor(i, QColor(i, i, i).rgb())
+		pd += [(sx, 0), (0, sy), (sx, sy)]
+		
+		opos = self.world.grid.blockPosAt(self.world.vehicle.position)
+	
+		for p in pd:
+			pos = (opos[0] + p[0], opos[1] + p[1])
+			
+			block = None
+			if pos in self.world.grid.blocks:
+				block = self.world.grid.blocks[pos]
+
+			if not block:
+				continue
+			
+			img = np.require(block.poData() * 0xff, np.uint8, 'C')
+			self._gridImages[pos] = QImage(img.data, img.shape[0], img.shape[1], QImage.Format_Indexed8)
+			
+			for i in range(256):
+				self._gridImages[pos].setColor(i, QColor(i, i, i).rgb())
 	
 	def _drawGrid(self, context):
 		for pos, img in self._gridImages.items():
@@ -71,6 +90,7 @@ class QPainterRenderer(Renderer):
 	
 	def _drawObstacles(self, context):
 		context.setPen(QColor(255, 255, 0))
+		
 		for i,c in enumerate(self.world.obstacles):
 			prev = c[0]
 			for p in c[1:]:

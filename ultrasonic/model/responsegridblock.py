@@ -7,7 +7,7 @@ from util import *
 
 class ResponseGridBlock:
 	"""
-		Блок сетки отклика размерами side x sideячеек.
+		Блок сетки отклика размерами side x side ячеек.
 		Одна ячейка сетки содержит вероятности откликов с n различных направлений.
 	"""
 	def __init__(self, side, n = 8):

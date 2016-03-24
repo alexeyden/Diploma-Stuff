@@ -1,7 +1,11 @@
 import math
 import numpy as np
 cimport numpy as np
+
 from libc.stdint cimport *
+
+from libcpp cimport bool
+from libc.stdlib cimport malloc, free
 
 np.import_array()
 
@@ -47,7 +51,7 @@ cdef class CppResponseGridBlock:
 		shape[0] = <np.npy_intp> self.thisptr.side()
 		shape[1] = <np.npy_intp> self.thisptr.side()
 		
-		return np.PyArray_SimpleNewFromData(2, shape, np.NPY_FLOAT32, self.thisptr.poData())
+		return np.PyArray_SimpleNewFromData(2, shape, np.NPY_FLOAT32, <void*> self.thisptr.poData())
 		
 	def prData(self, index):
 		cdef np.npy_intp shape[2]

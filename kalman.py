@@ -49,12 +49,12 @@ if __name__ == "__main__":
 	
 	data = []
 	for line in f:
-		data.append((float(line.split("\t")[0]), float(line.split("\t")[1])))
+		data.append((float(line.split(" ")[0]), float(line.split(" ")[1])))
 	
 	data = np.array(data)
 	
-	Q = 0.1 * np.eye(2) #шум процесса
-	R = 0.2 * np.eye(2) #шум измеренеия
+	Q = 0.01 * np.eye(2) #шум процесса
+	R = 0.01 * np.eye(2) #шум измеренеия
 	
 	F = np.eye(2)
 	B = np.eye(2)

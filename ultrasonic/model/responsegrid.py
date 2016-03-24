@@ -21,6 +21,9 @@ class ResponseGrid:
 		self.blocks = dict()
 		
 		self._blockProto = blockProto
+	
+	def blockProto(self):
+		return self._blockProto
 		
 	def blockAt(self, pos):
 		pos = self.blockPosAt(pos)

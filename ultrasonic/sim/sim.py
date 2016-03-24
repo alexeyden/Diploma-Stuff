@@ -1,3 +1,6 @@
+#!/usr/bin/env python2
+# coding:utf-8
+
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -30,7 +33,7 @@ class SimMainWindow(QWidget):
 		image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 		builder.buildObstacleMap(image)
 		
-		proto = CppResponseGridBlock(128, 8)
+		proto = CppResponseGridBlock(64, 1)
 		builder.buildGrid(ResponseGrid(4, proto))
 		
 		self.world = builder.finish()

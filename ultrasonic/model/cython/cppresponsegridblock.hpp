@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include "util.hpp"
 
+#include <stdexcept>
+
 using std::min;
 using std::max;
 
@@ -15,13 +17,13 @@ public:
 	 : _side(side), _angles(n) {
 		 
 		_poMap = new float[_side * _side];
-		memset(_poMap, 0.5f, _side * _side);
+		std::fill(_poMap, _poMap + _side*_side, 0.5f);
 		
 		_prMap = new float*[_angles];
 		
 		for(int i = 0; i < _angles; i++) {
 			_prMap[i] = new float[_side * _side];
-			memset(_prMap[i], 1.0f - pow(0.5, 1.0/float(_angles)), _side * _side);
+			std::fill(_prMap[i], _prMap[i] + _side*_side, 1.0f - pow(0.5, 1.0/float(_angles)));
 		}
 	}
 	
@@ -87,6 +89,7 @@ public:
 	
 	ResponseGridBlock* clone() {
 		ResponseGridBlock* clone = new ResponseGridBlock(_side, _angles);
+		
 		memcpy(clone->poData(), this->poData(), sizeof(float) * _side * _side);
 		for(int i = 0; i < _angles; i++) {
 			memcpy(clone->prData(i), this->prData(i), sizeof(float) * _side * _side);
@@ -98,10 +101,10 @@ public:
 protected:
 	void updateCell(int x, int y, double s, double r, double theta, double alpha, bool blackout) {
 		int theta_index = int(to_deg(theta)/(360.0/_angles));
-		
-		double k = 5.0/(alpha * r);
+
+		double k = 20.0/(alpha * r);
 		//std::cout << alpha * r * _scale << std::endl;
-		double eps = 1.2;
+		double eps = 1.5;
 		
 		double Ps = (fabs(s - r) > eps || blackout) ? 0.05 : min(1.0, k);
 		double Pp = _prMap[theta_index][y * _side + x];
@@ -113,7 +116,7 @@ protected:
 		for(int i = 0; i < _angles; i++)
 			Po *= (1.0 - _prMap[i][y * _side + x]);
 		Po = 1.0 - Po;
-		_poMap[y * _side + x] = 1.0f;
+		_poMap[y * _side + x] = Po;
 	}
 	
 private:	

@@ -5,6 +5,8 @@ from PyQt5.QtWidgets import *
 import sys
 from sim.sim import SimMainWindow
 
+from model.cppresponsegridblock import CppResponseGridBlock
+
 def main():
 	app = QApplication(sys.argv)
 	window = SimMainWindow()

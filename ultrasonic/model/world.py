@@ -3,6 +3,8 @@
 
 import numpy as np
 import cv2
+import itertools
+from math import *
 
 class World:
 	def __init__(self, grid):
@@ -14,30 +16,45 @@ class World:
 		self._updateObstacles()
 		
 	def _updateObstacles(self):
-		Pthr = int(0.6 * 0xff)
-		border = 3
+		pd = [(0, 0)]
 		
-		bpos = self.grid.blockPosAt(self.vehicle.position)
-		block = self.grid.blocks[bpos]
+		pos = self.grid.blockPosAt(self.vehicle.position)
 		
-		pmap = np.require(block.poData() * 0xff, np.uint8, 'C')
-		ret, pmap = cv2.threshold(pmap, Pthr, 0xff, cv2.THRESH_BINARY)
-		kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(border,border))
-		pmap = cv2.dilate(pmap, kernel, iterations=1)
-		obstacles, hier = cv2.findContours(pmap, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)
-		cv2.drawContours(pmap, obstacles, -1, 0xff, border)
-		obstacles, hier = cv2.findContours(pmap, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)
+		dx = self.vehicle.position[0] / self.grid.blockSize
+		dy = self.vehicle.position[1] / self.grid.blockSize
 		
-		self.obstacles = [
-			np.require(ob, dtype=np.float) * self.grid.blockSize/block.side + np.array(bpos)*self.grid.blockSize for ob in obstacles
-		]
+		sx = 1 if dx > 0 and modf(dx)[0] > 0.5 or dx < 0 and modf(abs(dx))[0] < 0.5 else -1 
+		sy = 1 if dy > 0 and modf(dy)[0] > 0.5 or dy < 0 and modf(abs(dy))[0] < 0.5 else -1
 		
-		f = open('/tmp/obs.csv', 'w')
-		for b in self.obstacles:
-			for o in b:
-				f.write(str(o[0][0]) + '\t' + str(o[0][1]) + '\n')
-			f.write('\n')
-		f.close()
+		pd += [(sx, 0), (0, sy), (sx, sy)]
+			
+		self.obstacles = []
+		
+		for p in pd:
+			bpos = (pos[0] + p[0], pos[1] + p[1])
+			
+			if not bpos in self.grid.blocks:
+				continue
+			
+			block = self.grid.blocks[bpos]
+
+			Pthr = int(0.6 * 0xff)
+			border = 3
+			
+			pmap = np.require(block.poData() * 0xff, np.uint8, 'C')
+			ret, pmap = cv2.threshold(pmap, Pthr, 0xff, cv2.THRESH_BINARY)
+			
+			kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(border,border))
+			pmap = cv2.dilate(pmap, kernel, iterations=1)
+			
+			obstacles, hier = cv2.findContours(pmap, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)
+			cv2.drawContours(pmap, obstacles, -1, 0xff, border)
+			
+			obstacles, hier = cv2.findContours(pmap, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)
+			
+			self.obstacles += [
+				np.require(ob, dtype=np.float) * self.grid.blockSize/block.side + np.array(bpos)*self.grid.blockSize for ob in obstacles
+			]
 		
 class WorldBuilder:
 	def buildGrid(self, grid):

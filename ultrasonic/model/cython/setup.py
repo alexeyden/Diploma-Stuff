@@ -7,7 +7,7 @@ setup(ext_modules = cythonize(Extension(
 	"cppresponsegridblock",
 	sources=["cppresponsegridblock.pyx"],
 	language="c++",
-	extra_compile_args=['-O3', '-std=c++11']
+	extra_compile_args=['-O2', '-std=c++11']
 )))
 
-os.system("cp cppresponsegridblock.so ../")
+os.system("echo copying..; cp cppresponsegridblock.so ../")

@@ -13,6 +13,7 @@ class Sensor:
 		self.angle = to_rad(30) 
 		
 		self.lastRange = 0
+		self.maxRange = 4
 		
 	def measure(self):
 		raise NotImplementedError()
