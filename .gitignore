@@ -1,1 +1,9 @@
+__pycache__
+*.so
+*.so.*
 *.pyc
+.idea
+model/cython/*.cpp
+model/cython/build
+model/opencv/*
+!model/opencv/build_opencv.sh
