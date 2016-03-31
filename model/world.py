@@ -59,7 +59,7 @@ class WorldBuilder:
     def buildGrid(self, grid):
         raise NotImplementedError()
 
-    def buildSensor(self, position, direction):
+    def buildSensor(self, position, direction, name=None):
         raise NotImplementedError()
 
     def buildVehicle(self, size, position, rotation):

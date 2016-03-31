@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+    <head>
+        <title> Дальномеры </title>
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <canvas id="canvas" width="800" height="500"></canvas>
+        <div id="info">
+            <b>Расстояния</b>:<br>
+            Левый: <span id="range_left">0</span> м <br>
+            Правый: <span id="range_right">0</span> м <br>
+            Передний: <span id="range_front">0</span> м <br>
+            Задний: <span id="range_rear">0</span> м <br>
+        </div>
+        <div id="actions">
+            <input type="button" id="action_scan" value="Сканировать" />
+        </div>
+
+        <script src="info.js" type="application/javascript" ></script>
+        <script src="render.js" type="application/javascript" ></script>
+        <script src="update.js" type="application/javascript" ></script>
+    </body>
+</html>

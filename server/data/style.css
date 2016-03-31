@@ -1,0 +1,17 @@
+canvas {
+    border: 1px solid #909090;
+    width: 800px;
+    height: 500px;
+    float: left;
+    margin: 10px;
+    padding: 0px;
+}
+
+div#info {
+    padding: 10px;
+    float: clear;
+}
+
+div#actions {
+    padding: 10px;
+}

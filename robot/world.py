@@ -13,8 +13,8 @@ class RobotWorldBuilder(WorldBuilder):
         self.port = None
         self.baseurl = None
 
-    def buildSensor(self, position, direction):
-        self.sensors.append(RobotSensor(self.vehicle, position, direction, self.port))
+    def buildSensor(self, position, direction, name=None):
+        self.sensors.append(RobotSensor(self.vehicle, position, direction, self.port, name=name))
 
     def buildVehicle(self, size, position, rotation):
         self.vehicle = Vehicle(size, position, rotation, self.world)

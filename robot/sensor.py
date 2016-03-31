@@ -3,12 +3,9 @@ from model.util import *
 
 import random
 
-import urllib2
-
-
 class RobotSensor(sensor.Sensor):
-    def __init__(self, vehicle, position, rotation, port):
-        sensor.Sensor.__init__(self, vehicle, position, rotation)
+    def __init__(self, vehicle, position, rotation, port, name=None):
+        sensor.Sensor.__init__(self, vehicle, position, rotation, name)
 
         self.port = port
         self.angle = to_rad(30)
